@@ -48,6 +48,15 @@ class in_producto(db.Model):
     prod_estado          = db.Column(db.Integer)
     prod_fecha_registro  = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
+    
+class in_proveedor(db.Model):
+    prov_id         = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    prov_nombre     = db.Column(db.String(255))
+    prov_telefono   = db.Column(db.String(20))
+    prov_ruc        = db.Column(db.String(20))
+    prov_correo     = db.Column(db.String(255))
+    prov_estado     = db.Column(db.Integer)
+
 @app.route('/api/v1/',methods=['GET'])
 def index():
     return jsonify({'Mensaje':'Bienvenido al API REST'})
@@ -162,17 +171,16 @@ def obtener_productos():
     resultados = []
     for producto in productos:
         resultados.append({
-            'prod_id': producto.prod_id,
-            'prod_codigo': producto.prod_codigo,
-            'prod_nombre': producto.prod_nombre,
-            'prod_precio': float(producto.prod_precio),
-            'prod_cantidad': producto.prod_cantidad,
-            'prod_cat_id': producto.prod_cat_id,
-            'prod_estado': producto.prod_estado,
-            'prod_fecha_registro': producto.prod_fecha_registro.strftime('%Y-%m-%d %H:%M:%S'),
+            'prod_id'               : producto.prod_id,
+            'prod_codigo'           : producto.prod_codigo,
+            'prod_nombre'           : producto.prod_nombre,
+            'prod_precio'           : float(producto.prod_precio),
+            'prod_cantidad'         : producto.prod_cantidad,
+            'prod_cat_id'           : producto.prod_cat_id,
+            'prod_estado'           : producto.prod_estado,
+            'prod_fecha_registro'   : producto.prod_fecha_registro.strftime('%Y-%m-%d %H:%M:%S'),
         })
     return resultados
-
 
 # Ruta para traer los productos
 @app.route('/api/v1/registrar_producto', methods=['POST'])
@@ -180,12 +188,12 @@ def registrar_producto():
     try:
         data = request.get_json()
         nueva_producto  = in_producto(
-            prod_codigo=data['prod_codigo'],
-            prod_nombre=data['prod_nombre'],
-            prod_precio=data['prod_precio'],
-            prod_cantidad=data['prod_cantidad'],
-            prod_cat_id=data['prod_cat_id'],
-            prod_estado=data['prod_estado']
+            prod_codigo     =data['prod_codigo'],
+            prod_nombre     =data['prod_nombre'],
+            prod_precio     =data['prod_precio'],
+            prod_cantidad   =data['prod_cantidad'],
+            prod_cat_id     =data['prod_cat_id'],
+            prod_estado     =data['prod_estado']
         )
         db.session.add(nueva_producto)
         db.session.commit()
@@ -222,6 +230,75 @@ def editar_producto(prod_id, accion):
 
             db.session.commit()
             return jsonify({'mensaje': 'Producto editado exitosamente', 'est': 'success'})
+
+    except Exception as e:
+        return jsonify({'message': str(e), 'est': 'error'})
+
+
+#================================== PROVEEDORES ===================================
+# Ruta para traer los proveedores
+@app.route('/api/v1/registrar_proveedor', methods=['POST'])
+def registrar_proveedor():
+    try:
+        data = request.get_json()
+        nueva_proveedor  = in_proveedor(
+            prov_nombre     =data['prov_nombre'],
+            prov_telefono   =data['prov_telefono'],
+            prov_ruc        =data['prov_ruc'],
+            prov_correo     =data['prov_correo'],
+            prov_estado     =data['prov_estado']
+        )
+        db.session.add(nueva_proveedor)
+        db.session.commit()
+
+        return jsonify({'message': 'Proveedor registrada exitosamente', 'est': 'success'})
+        
+    except Exception as e:
+        
+        return jsonify({'message': str(e), 'est': 'error'})
+
+# Ruta para traer los proveedores
+@app.route('/api/v1/obtener_proveedor', methods=['GET'])
+def obtener_proveedor():
+    proveedores = in_proveedor.query.filter(in_proveedor.prov_estado != 9).order_by(in_proveedor.prov_id.desc()).all()
+
+    resultados = []
+    for proveedor in proveedores:
+        resultados.append({
+            'prov_id': proveedor.prov_id,
+            'prov_nombre': proveedor.prov_nombre,
+            'prov_telefono': proveedor.prov_telefono,
+            'prov_ruc': proveedor.prov_ruc,
+            'prov_correo': proveedor.prov_correo,
+            'prov_estado': proveedor.prov_estado
+        })
+    return resultados
+
+# Ruta para editar y/o eliminar los proveedores
+@app.route('/api/v1/editar_eliminar_proveedores/<int:prov_id>/<string:accion>', methods=['PUT'])
+def editar_proveedores(prov_id, accion):
+    try:
+        # Fetch the category from the database
+        proveedor = in_proveedor.query.get(prov_id)
+
+        if proveedor is None:
+            return jsonify({'error': 'Proveedor no encontrado', 'est': 'warning'})
+
+        if accion == 'deleted':
+            proveedor.prov_estado = 9
+            db.session.commit()
+            return jsonify({'mensaje': 'Proveedor eliminado exitosamente', 'est': 'success'})
+
+        if accion == 'edit':
+            data = request.get_json()
+            proveedor.prov_nombre = data.get('prov_nombre', proveedor.prov_nombre)
+            proveedor.prov_telefono = data.get('prov_telefono', proveedor.prov_telefono)
+            proveedor.prov_ruc = data.get('prov_ruc', proveedor.prov_ruc)
+            proveedor.prov_correo = data.get('prov_correo', proveedor.prov_correo)
+            proveedor.prov_estado = data.get('prov_estado', proveedor.prov_estado)
+
+            db.session.commit()
+            return jsonify({'mensaje': 'Proveedor editado exitosamente', 'est': 'success'})
 
     except Exception as e:
         return jsonify({'message': str(e), 'est': 'error'})

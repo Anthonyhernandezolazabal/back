@@ -1,4 +1,4 @@
-CREATE TABLE bd_usuario (
+CREATE TABLE in_usuario (
     us_id SERIAL PRIMARY KEY,
     us_nombre VARCHAR(100),
     us_username VARCHAR(50) UNIQUE,
@@ -25,6 +25,15 @@ CREATE TABLE in_producto (
     prod_estado integer,
     prod_fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (prod_cat_id) REFERENCES in_categoria(cat_id)
+);
+
+CREATE TABLE in_proveedor (
+    prov_id SERIAL PRIMARY KEY,
+    prov_nombre VARCHAR(255),
+    prov_telefono VARCHAR(20),
+    prov_ruc VARCHAR(20),
+    prov_correo VARCHAR(20),
+    prov_estado integer
 );
 
 INSERT INTO bd_usuario(us_nombre,us_username,us_email,us_password,us_rol) VALUES('DevOps','Admin','admin@correo.com','123','Administrador')

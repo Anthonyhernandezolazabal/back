@@ -2,6 +2,7 @@ from flask import Flask,request,jsonify
 import psycopg2
 from flask_cors import CORS
 from conexion import db, init_db
+from datetime import datetime
 app = Flask(__name__)
 
 HOST = "127.0.0.1"
@@ -36,6 +37,16 @@ class in_categoria(db.Model):
     cat_nombre          = db.Column(db.String(255))
     cat_descripcion     = db.Column(db.String(255))
     cat_estado          = db.Column(db.Integer)
+
+class in_producto(db.Model):
+    prod_id              = db.Column(db.Integer, primary_key=True,autoincrement=True)
+    prod_codigo          = db.Column(db.String(255))
+    prod_nombre          = db.Column(db.String(255))
+    prod_precio          = db.Column(db.Numeric)
+    prod_cantidad        = db.Column(db.Integer)
+    prod_cat_id          = db.Column(db.Integer, db.ForeignKey('in_categoria.cat_id'))
+    prod_estado          = db.Column(db.Integer)
+    prod_fecha_registro  = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
 @app.route('/api/v1/',methods=['GET'])
 def index():
@@ -78,7 +89,7 @@ def login():
     else:
         return jsonify({'message': 1})  # 1: error    0: ok
     
-
+#================================== CATEGORIA ===================================
 # Ruta para traer las categorias
 @app.route('/api/v1/obtener_categorias', methods=['GET'])
 def obtener_categorias():
@@ -114,7 +125,7 @@ def registrar_categoria():
         return jsonify({'message': str(e), 'est': 'error'})
 
 
-# Ruta para editar una categoría
+# Ruta para editar y/o eliminar una categoría
 @app.route('/api/v1/editar_eliminar_categoria/<int:cat_id>/<string:accion>', methods=['PUT'])
 def editar_categoria(cat_id, accion):
     try:
@@ -142,6 +153,78 @@ def editar_categoria(cat_id, accion):
         return jsonify({'message': str(e), 'est': 'error'})
 
 
+#================================== PRODUCTOS ===================================
+# Ruta para traer los productos
+@app.route('/api/v1/obtener_productos', methods=['GET'])
+def obtener_productos():
+    productos = in_producto.query.filter(in_producto.prod_estado != 9).order_by(in_producto.prod_id.desc()).all()
+
+    resultados = []
+    for producto in productos:
+        resultados.append({
+            'prod_id': producto.prod_id,
+            'prod_codigo': producto.prod_codigo,
+            'prod_nombre': producto.prod_nombre,
+            'prod_precio': float(producto.prod_precio),
+            'prod_cantidad': producto.prod_cantidad,
+            'prod_cat_id': producto.prod_cat_id,
+            'prod_estado': producto.prod_estado,
+            'prod_fecha_registro': producto.prod_fecha_registro.strftime('%Y-%m-%d %H:%M:%S'),
+        })
+    return resultados
+
+
+# Ruta para traer los productos
+@app.route('/api/v1/registrar_producto', methods=['POST'])
+def registrar_producto():
+    try:
+        data = request.get_json()
+        nueva_producto  = in_producto(
+            prod_codigo=data['prod_codigo'],
+            prod_nombre=data['prod_nombre'],
+            prod_precio=data['prod_precio'],
+            prod_cantidad=data['prod_cantidad'],
+            prod_cat_id=data['prod_cat_id'],
+            prod_estado=data['prod_estado']
+        )
+        db.session.add(nueva_producto)
+        db.session.commit()
+
+        return jsonify({'message': 'Producto registrada exitosamente', 'est': 'success'})
+        
+    except Exception as e:
+        
+        return jsonify({'message': str(e), 'est': 'error'})
+
+# Ruta para editar y/o eliminar los productos
+@app.route('/api/v1/editar_eliminar_producto/<int:prod_id>/<string:accion>', methods=['PUT'])
+def editar_producto(prod_id, accion):
+    try:
+        # Fetch the category from the database
+        producto = in_producto.query.get(prod_id)
+
+        if producto is None:
+            return jsonify({'error': 'Producto no encontrada', 'est': 'warning'})
+
+        if accion == 'deleted':
+            producto.prod_estado = 9
+            db.session.commit()
+            return jsonify({'mensaje': 'Producto eliminado exitosamente', 'est': 'success'})
+
+        if accion == 'edit':
+            data = request.get_json()
+            producto.prod_codigo    = data.get('prod_codigo', producto.prod_codigo)
+            producto.prod_nombre    = data.get('prod_nombre', producto.prod_nombre)
+            producto.prod_precio    = data.get('prod_precio', producto.prod_precio)
+            producto.prod_cantidad  = data.get('prod_cantidad', producto.prod_cantidad)
+            producto.prod_cat_id    = data.get('prod_cat_id', producto.prod_cat_id)
+            producto.prod_estado    = data.get('prod_estado', producto.prod_estado)
+
+            db.session.commit()
+            return jsonify({'mensaje': 'Producto editado exitosamente', 'est': 'success'})
+
+    except Exception as e:
+        return jsonify({'message': str(e), 'est': 'error'})
 
 
 if __name__ == '__main__':

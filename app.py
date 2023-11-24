@@ -4,8 +4,8 @@ from flask_cors import CORS
 from conexion import db, init_db
 app = Flask(__name__)
 
-HOST = "127.168.0.4"
-PORT = 5400
+HOST = "127.0.0.1"
+PORT = 5000
 
 # Inicializa la extensión CORS
 cors = CORS(app, resources={
@@ -21,7 +21,7 @@ init_db(app)
 
 
 
-class bd_usuario(db.Model):
+class in_usuario(db.Model):
     us_id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
     us_nombre       = db.Column(db.String(100))
     us_username     = db.Column(db.String(50), unique=True)
@@ -29,6 +29,13 @@ class bd_usuario(db.Model):
     us_password     = db.Column(db.String(100))
     us_codigo       = db.Column(db.String(100))
     us_rol          = db.Column(db.String(50))
+
+
+class in_categoria(db.Model):
+    cat_id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    cat_nombre          = db.Column(db.String(255))
+    cat_descripcion     = db.Column(db.String(255))
+    cat_estado          = db.Column(db.Integer)
 
 @app.route('/api/v1/',methods=['GET'])
 def index():
@@ -57,7 +64,7 @@ def login():
     username = data['us_username']
     password = data['us_password']
     
-    usuario = bd_usuario.query.filter_by(us_username=username).first()
+    usuario = in_usuario.query.filter_by(us_username=username).first()
 
     if usuario and usuario.us_password == password:
         datos_user = {
@@ -71,6 +78,71 @@ def login():
     else:
         return jsonify({'message': 1})  # 1: error    0: ok
     
+
+# Ruta para traer las categorias
+@app.route('/api/v1/obtener_categorias', methods=['GET'])
+def obtener_categorias():
+    categorias = in_categoria.query.filter(in_categoria.cat_estado != 9).order_by(in_categoria.cat_id.desc()).all()
+
+    resultados = []
+    for categoria in categorias:
+        resultados.append({
+            'cat_id': categoria.cat_id,
+            'cat_nombre': categoria.cat_nombre,
+            'cat_descripcion': categoria.cat_descripcion,
+            'cat_estado': categoria.cat_estado,
+        })
+    return resultados
+
+# Ruta para traer las categorias
+@app.route('/api/v1/registrar_categoria', methods=['POST'])
+def registrar_categoria():
+    try:
+        data = request.get_json()
+        nueva_categoria  = in_categoria(
+            cat_nombre=data['cat_nombre'],
+            cat_descripcion=data['cat_descripcion'],
+            cat_estado=data['cat_estado'],
+        )
+        db.session.add(nueva_categoria)
+        db.session.commit()
+
+        return jsonify({'message': 'Categoría registrada exitosamente', 'est': 'success'})
+        
+    except Exception as e:
+        
+        return jsonify({'message': str(e), 'est': 'error'})
+
+
+# Ruta para editar una categoría
+@app.route('/api/v1/editar_eliminar_categoria/<int:cat_id>/<string:accion>', methods=['PUT'])
+def editar_categoria(cat_id, accion):
+    try:
+        # Fetch the category from the database
+        categoria = in_categoria.query.get(cat_id)
+
+        if categoria is None:
+            return jsonify({'error': 'Categoría no encontrada', 'est': 'warning'})
+
+        if accion == 'deleted':
+            categoria.cat_estado = 9
+            db.session.commit()
+            return jsonify({'mensaje': 'Categoría eliminada exitosamente', 'est': 'success'})
+
+        if accion == 'edit':
+            data = request.get_json()
+            categoria.cat_nombre        = data.get('cat_nombre', categoria.cat_nombre)
+            categoria.cat_descripcion   = data.get('cat_descripcion', categoria.cat_descripcion)
+            categoria.cat_estado        = data.get('cat_estado', categoria.cat_estado)
+
+            db.session.commit()
+            return jsonify({'mensaje': 'Categoría editada exitosamente', 'est': 'success'})
+
+    except Exception as e:
+        return jsonify({'message': str(e), 'est': 'error'})
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

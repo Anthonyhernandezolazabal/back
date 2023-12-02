@@ -5,8 +5,8 @@ from conexion import db, init_db
 from datetime import datetime
 app = Flask(__name__)
 
-HOST = "127.0.0.1"
-PORT = 5000
+HOST = "192.168.0.4"
+PORT = 5400
 
 # Inicializa la extensión CORS
 cors = CORS(app, resources={
@@ -56,6 +56,32 @@ class in_proveedor(db.Model):
     prov_ruc        = db.Column(db.String(20))
     prov_correo     = db.Column(db.String(255))
     prov_estado     = db.Column(db.Integer)
+
+class parametroadmin(db.Model):
+    para_id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    para_cadena1        = db.Column(db.String(255))
+    para_cadena2        = db.Column(db.String(20))
+    para_fecha1         = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    para_fecha2         = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    para_int1           = db.Column(db.Integer)
+    para_int2           = db.Column(db.Integer)
+    para_correlativo    = db.Column(db.Integer, default=0)
+    para_prefijo        = db.Column(db.Integer, default=0)
+    para_estado         = db.Column(db.Integer, default=0)
+
+    
+
+class in_venta(db.Model):
+    id              = db.Column(db.Integer, primary_key=True)
+    vent_usuario    = db.Column(db.Integer, db.ForeignKey('in_usuario.us_id'))
+    vent_cliente    = db.Column(db.Integer, nullable=False)
+    vent_direccion  = db.Column(db.String(255), nullable=False)
+    vent_fecha      = db.Column(db.String(255), nullable=False)
+    venta_detalle   = db.Column(db.Text, nullable=False)
+    vent_total      = db.Column(db.Numeric, nullable=False)
+    vent_igv        = db.Column(db.Numeric, nullable=False)
+    vent_subtotal   = db.Column(db.Numeric, nullable=False)
+
 
 @app.route('/api/v1/',methods=['GET'])
 def index():
@@ -303,6 +329,68 @@ def editar_proveedores(prov_id, accion):
     except Exception as e:
         return jsonify({'message': str(e), 'est': 'error'})
 
+
+#================================== PARAMETROS ===================================
+# Ruta para traer los proveedores
+@app.route('/api/v1/parametroadmin/<int:para_id>', methods=['GET'])
+def obtener_parametro(para_id):
+    # Corregir la consulta y utilizar la variable correcta en la condición if
+    parametros = parametroadmin.query.filter(parametroadmin.para_prefijo == para_id, parametroadmin.para_estado != 9).all()
+
+    if parametros:
+        resultados = []
+
+        for parametro in parametros:
+            resultados.append({
+                'para_id': parametro.para_id,
+                'para_cadena1': parametro.para_cadena1,
+                'para_cadena2': parametro.para_cadena2,
+                'para_fecha1': str(parametro.para_fecha1),
+                'para_fecha2': str(parametro.para_fecha2),
+                'para_int1': parametro.para_int1,
+                'para_int2': parametro.para_int2,
+                'para_correlativo': parametro.para_correlativo,
+                'para_prefijo': parametro.para_prefijo,
+                'para_estado': parametro.para_estado
+            })
+
+        return jsonify(resultados)
+    else:
+        return jsonify({'mensaje': 'Parametro no encontrado'}), 404
+
+
+#================================== VENTA ===================================
+@app.route('/api/v1/ventas', methods=['POST'])
+def agregar_venta():
+    try:
+            
+        vent_usuario = request.json['vent_usuario']
+        vent_cliente = request.json['vent_cliente']
+        vent_direccion = request.json['vent_direccion']
+        vent_fecha = request.json['vent_fecha']
+        venta_detalle = request.json['venta_detalle']
+        vent_total = request.json['vent_total']
+        vent_igv = request.json['vent_igv']
+        vent_subtotal = request.json['vent_subtotal']
+
+        nueva_venta = in_venta(
+            vent_usuario=vent_usuario,
+            vent_cliente=vent_cliente,
+            vent_direccion=vent_direccion,
+            vent_fecha=vent_fecha,
+            venta_detalle=venta_detalle,
+            vent_total=vent_total,
+            vent_igv=vent_igv,
+            vent_subtotal=vent_subtotal
+        )
+
+        db.session.add(nueva_venta)
+        db.session.commit()
+
+        return jsonify({'message': 'Venta registrada exitosamente', 'est': 'success'})
+    
+    except Exception as e:
+        return jsonify({'message': str(e), 'est': 'error'})
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -72,24 +72,35 @@ class parametroadmin(db.Model):
     
 
 class in_venta(db.Model):
-    vent_id = db.Column(db.Integer, primary_key=True)
-    vent_usuario = db.Column(db.Integer, nullable=False)
-    vent_cliente = db.Column(db.Integer, nullable=False)
-    vent_direccion = db.Column(db.String(255), nullable=False)
-    vent_fecha = db.Column(db.Date, nullable=False)
-    vent_total = db.Column(db.Numeric(10, 2), nullable=False)
-    vent_igv = db.Column(db.Numeric(10, 2), nullable=False)
-    vent_subtotal = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_id         = db.Column(db.Integer, primary_key=True)
+    vent_usuario    = db.Column(db.Integer, nullable=False)
+    vent_cliente    = db.Column(db.Integer, nullable=False)
+    vent_direccion  = db.Column(db.String(255), nullable=False)
+    vent_fecha      = db.Column(db.Date, nullable=False)
+    vent_total      = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_igv        = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_subtotal   = db.Column(db.Numeric(10, 2), nullable=False)
 
 class in_ventadetalle(db.Model):
-    vent_det_id = db.Column(db.Integer, primary_key=True)
-    vent_det_vent_id = db.Column(db.Integer, db.ForeignKey('in_venta.vent_id'), nullable=False)
-    vent_item = db.Column(db.Numeric(10, 2), nullable=False)
-    vent_cantidad = db.Column(db.Numeric(10, 2), nullable=False)
-    vent_unidad = db.Column(db.String(255), nullable=False)
-    vent_producto = db.Column(db.String(255), nullable=False)
-    vent_valor = db.Column(db.Numeric(10, 2), nullable=False)
-    vent_subtotal = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_det_id         = db.Column(db.Integer, primary_key=True)
+    vent_det_vent_id    = db.Column(db.Integer, db.ForeignKey('in_venta.vent_id'), nullable=False)
+    vent_item           = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_cantidad       = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_unidad         = db.Column(db.String(255), nullable=False)
+    vent_producto       = db.Column(db.String(255), nullable=False)
+    vent_valor          = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_subtotal       = db.Column(db.Numeric(10, 2), nullable=False)
+
+class in_clientes(db.Model):
+    cl_id           = db.Column(db.Integer, primary_key=True)
+    cl_nombre       = db.Column(db.String(255), nullable=False)
+    cl_doc          = db.Column(db.String(20), nullable=False)
+    cl_email        = db.Column(db.String(255), nullable=True)
+    cl_telefono     = db.Column(db.String(20), nullable=True)
+    cl_fnacimiento  = db.Column(db.Date, nullable=True)
+    cl_direccion    = db.Column(db.String(255), nullable=True)
+    cl_estado       = db.Column(db.Integer, default=0)
+
 
 @app.route('/api/v1/',methods=['GET'])
 def index():
@@ -367,6 +378,77 @@ def obtener_parametro(para_id):
         return jsonify({'mensaje': 'Parametro no encontrado'}), 404
 
 #================================== CLIENTE ===================================
+# Ruta para traer los clientes
+@app.route('/api/v1/obtener_clientes', methods=['GET'])
+def obtener_clientes():
+    clientes = in_clientes.query.filter(in_clientes.cl_estado != 9).order_by(in_clientes.cl_id.desc()).all()
+
+    resultados = []
+    for cliente in clientes:
+        resultados.append({
+            'cl_id': cliente.cl_id,
+            'cl_nombre': cliente.cl_nombre,
+            'cl_doc': cliente.cl_doc,
+            'cl_email': cliente.cl_email,
+            'cl_telefono': cliente.cl_telefono,
+            'cl_fnacimiento': str(cliente.cl_fnacimiento),
+            'cl_direccion': cliente.cl_direccion
+        })
+    return resultados
+
+
+# Ruta para traer los clientes
+@app.route('/api/v1/registrar_clientes', methods=['POST'])
+def registrar_clientes():
+    try:
+        data = request.get_json()
+        nueva_clientes  = in_clientes(
+            cl_nombre       =data['cl_nombre'],
+            cl_doc          =data['cl_doc'],
+            cl_email        =data.get('cl_email'),
+            cl_telefono     =data.get('cl_telefono'),
+            cl_fnacimiento  =data.get('cl_fnacimiento'),
+            cl_direccion    =data.get('cl_direccion')
+        )
+        db.session.add(nueva_clientes)
+        db.session.commit()
+
+        return jsonify({'message': 'clientes registrada exitosamente', 'est': 'success'})
+        
+    except Exception as e:
+        
+        return jsonify({'message': str(e), 'est': 'error'})
+
+
+# Ruta para editar y/o eliminar los clientes
+@app.route('/api/v1/editar_eliminar_clientes/<int:cl_id>/<string:accion>', methods=['PUT'])
+def editar_cliente(cl_id, accion):
+    try:
+        cliente = in_clientes.query.get(cl_id)
+
+        if cliente is None:
+            return jsonify({'error': 'Cliente no encontrado', 'est': 'warning'})
+
+        if accion == 'deleted':
+            cliente.cl_estado = 9
+            db.session.commit()
+            return jsonify({'mensaje': 'Cliente eliminado exitosamente', 'est': 'success'})
+
+        if accion == 'edit':
+            data = request.get_json()
+            cliente.cl_nombre       = data.get('cl_nombre', cliente.cl_nombre)
+            cliente.cl_doc          = data.get('cl_doc', cliente.cl_doc)
+            cliente.cl_email        = data.get('cl_email', cliente.cl_email)
+            cliente.cl_telefono     = data.get('cl_telefono', cliente.cl_telefono)
+            cliente.cl_fnacimiento  = data.get('cl_fnacimiento', cliente.cl_fnacimiento)
+            cliente.cl_direccion    = data.get('cl_direccion', cliente.cl_direccion)
+            cliente.cl_estado       = data.get('cl_estado', cliente.cl_estado)
+
+            db.session.commit()
+            return jsonify({'mensaje': 'Cliente editado exitosamente', 'est': 'success'})
+
+    except Exception as e:
+        return jsonify({'message': str(e), 'est': 'error'})
 
 #================================== VENTA ===================================
 @app.route('/api/v1/registar_venta', methods=['POST'])

@@ -85,4 +85,14 @@ CREATE TABLE in_ventadetalle (
     vent_subtotal NUMERIC(10, 2) NOT NULL
 );
 
+CREATE TABLE in_clientes (
+    cl_id SERIAL PRIMARY KEY,
+    cl_nombre VARCHAR(255) NOT NULL,
+    cl_doc VARCHAR(20) NOT NULL,
+    cl_email VARCHAR(255) NULL,
+    cl_telefono VARCHAR(20) NULL,
+    cl_fnacimiento DATE NULL,
+    cl_direccion VARCHAR(255) NULL,
+);
+
 INSERT INTO bd_usuario(us_nombre,us_username,us_email,us_password,us_rol) VALUES('DevOps','Admin','admin@correo.com','123','Administrador')

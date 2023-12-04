@@ -5,8 +5,8 @@ from conexion import db, init_db
 from datetime import datetime
 app = Flask(__name__)
 
-HOST = "192.168.0.4"
-PORT = 5400
+HOST = "127.0.0.1"
+PORT = 5000
 
 # Inicializa la extensión CORS
 cors = CORS(app, resources={
@@ -72,16 +72,24 @@ class parametroadmin(db.Model):
     
 
 class in_venta(db.Model):
-    id              = db.Column(db.Integer, primary_key=True)
-    vent_usuario    = db.Column(db.Integer, db.ForeignKey('in_usuario.us_id'))
-    vent_cliente    = db.Column(db.Integer, nullable=False)
-    vent_direccion  = db.Column(db.String(255), nullable=False)
-    vent_fecha      = db.Column(db.String(255), nullable=False)
-    venta_detalle   = db.Column(db.Text, nullable=False)
-    vent_total      = db.Column(db.Numeric, nullable=False)
-    vent_igv        = db.Column(db.Numeric, nullable=False)
-    vent_subtotal   = db.Column(db.Numeric, nullable=False)
+    vent_id = db.Column(db.Integer, primary_key=True)
+    vent_usuario = db.Column(db.Integer, nullable=False)
+    vent_cliente = db.Column(db.Integer, nullable=False)
+    vent_direccion = db.Column(db.String(255), nullable=False)
+    vent_fecha = db.Column(db.Date, nullable=False)
+    vent_total = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_igv = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_subtotal = db.Column(db.Numeric(10, 2), nullable=False)
 
+class in_ventadetalle(db.Model):
+    vent_det_id = db.Column(db.Integer, primary_key=True)
+    vent_det_vent_id = db.Column(db.Integer, db.ForeignKey('in_venta.vent_id'), nullable=False)
+    vent_item = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_cantidad = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_unidad = db.Column(db.String(255), nullable=False)
+    vent_producto = db.Column(db.String(255), nullable=False)
+    vent_valor = db.Column(db.Numeric(10, 2), nullable=False)
+    vent_subtotal = db.Column(db.Numeric(10, 2), nullable=False)
 
 @app.route('/api/v1/',methods=['GET'])
 def index():
@@ -358,38 +366,47 @@ def obtener_parametro(para_id):
     else:
         return jsonify({'mensaje': 'Parametro no encontrado'}), 404
 
+#================================== CLIENTE ===================================
 
 #================================== VENTA ===================================
-@app.route('/api/v1/ventas', methods=['POST'])
+@app.route('/api/v1/registar_venta', methods=['POST'])
 def agregar_venta():
     try:
-            
-        vent_usuario = request.json['vent_usuario']
-        vent_cliente = request.json['vent_cliente']
-        vent_direccion = request.json['vent_direccion']
-        vent_fecha = request.json['vent_fecha']
-        venta_detalle = request.json['venta_detalle']
-        vent_total = request.json['vent_total']
-        vent_igv = request.json['vent_igv']
-        vent_subtotal = request.json['vent_subtotal']
+        data = request.get_json()
 
         nueva_venta = in_venta(
-            vent_usuario=vent_usuario,
-            vent_cliente=vent_cliente,
-            vent_direccion=vent_direccion,
-            vent_fecha=vent_fecha,
-            venta_detalle=venta_detalle,
-            vent_total=vent_total,
-            vent_igv=vent_igv,
-            vent_subtotal=vent_subtotal
+            vent_usuario=data['vent_usuario'],
+            vent_cliente=data['vent_cliente'],
+            vent_direccion=data['vent_direccion'],
+            vent_fecha=data['vent_fecha'],
+            vent_total=data['vent_total'],
+            vent_igv=data['vent_igv'],
+            vent_subtotal=data['vent_subtotal']
         )
 
         db.session.add(nueva_venta)
+        db.session.commit()  # Guarda la venta para obtener el vent_id
+
+        for detalle in data['venta_detalle']:
+            nuevo_detalle = in_ventadetalle(
+                vent_det_vent_id=nueva_venta.vent_id,
+                vent_item=detalle['vent_item'],
+                vent_cantidad=detalle['vent_cantidad'],
+                vent_unidad=detalle['vent_unidad'],
+                vent_producto=detalle['vent_producto'],
+                vent_valor=detalle['vent_valor'],
+                vent_subtotal=detalle['vent_subtotal']
+            )
+
+            db.session.add(nuevo_detalle)
+
         db.session.commit()
 
         return jsonify({'message': 'Venta registrada exitosamente', 'est': 'success'})
     
     except Exception as e:
+        # Asegúrate de hacer rollback en caso de error para evitar inconsistencias en la base de datos
+        db.session.rollback()
         return jsonify({'message': str(e), 'est': 'error'})
 
 if __name__ == '__main__':

@@ -75,8 +75,8 @@ CREATE TABLE in_venta (
 
 CREATE TABLE in_ventadetalle (
     vent_det_id SERIAL PRIMARY KEY,
-    vent_id INTEGER NOT NULL,
-    FOREIGN KEY (vent_id) REFERENCES in_venta(vent_id),
+    vent_det_vent_id INTEGER NOT NULL,
+    FOREIGN KEY (vent_det_vent_id) REFERENCES in_venta(vent_id),
     vent_item NUMERIC(10, 2) NOT NULL,
     vent_cantidad NUMERIC(10, 2) NOT NULL,
     vent_unidad VARCHAR(255) NOT NULL,

@@ -97,6 +97,8 @@ CREATE TABLE in_clientes (
     cl_telefono VARCHAR(20) NULL,
     cl_fnacimiento DATE NULL,
     cl_direccion VARCHAR(255) NULL,
+    cl_estado integer NULL
+
 );
 
 INSERT INTO bd_usuario(us_nombre,us_username,us_email,us_password,us_rol) VALUES('DevOps','Admin','admin@correo.com','123','Administrador')

@@ -531,7 +531,7 @@ def obtener_venta():
             'vent_usuario': vent_usuario,
             'vent_cliente': vent_cliente,
             'vent_direccion': vent_direccion,
-            'vent_fecha': vent_fecha,
+            'vent_fecha': vent_fecha.strftime('%Y-%m-%d'),
             'vent_total': vent_total,
             'vent_igv': vent_igv,
             'nombre_usuario': nombre_usuario,
@@ -561,18 +561,20 @@ def reporte_ventas_dia():
 @app.route('/api/v1/productos_mas_vendidos', methods=['GET'])
 def productos_mas_vendidos():
 
-    conn = psycopg2.connect(app.config['SQLALCHEMY_DATABASE_URI'])  # Establece la conexión a la base de datos
+    conn = psycopg2.connect(app.config['SQLALCHEMY_DATABASE_URI'])
     cursor = conn.cursor()
     consulta = """
-        select SUM(vent_cantidad) as vent_producto from in_ventadetalle
-        group by vent_producto order by SUM(vent_cantidad) DESC limit 5
-        """
+        SELECT SUM(vent_cantidad) as cantidad, vent_producto FROM in_ventadetalle
+        GROUP BY vent_producto ORDER BY SUM(vent_cantidad) DESC LIMIT 5
+    """
     cursor.execute(consulta)
     resultados = cursor.fetchall()
     cursor.close()
-    conn.close()  # Cierra la conexión a la base de datos
+    conn.close()
 
-    return jsonify(resultados)
+    resultados_formateados = [{'cantidad': row[0], 'vent_producto': row[1]} for row in resultados]
+
+    return jsonify(resultados_formateados)
 
 
 

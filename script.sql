@@ -72,6 +72,10 @@ CREATE TABLE in_venta (
     FOREIGN KEY (vent_usuario) REFERENCES in_usuario(us_id)
 );
 
+ALTER TABLE in_venta
+ADD CONSTRAINT fk_venta_cliente
+FOREIGN KEY (vent_cliente) REFERENCES in_clientes(cl_id);
+
 
 CREATE TABLE in_ventadetalle (
     vent_det_id SERIAL PRIMARY KEY,

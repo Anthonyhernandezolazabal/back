@@ -408,7 +408,8 @@ def registrar_clientes():
             cl_email        =data.get('cl_email'),
             cl_telefono     =data.get('cl_telefono'),
             cl_fnacimiento  =data.get('cl_fnacimiento'),
-            cl_direccion    =data.get('cl_direccion')
+            cl_direccion    =data.get('cl_direccion'),
+            cl_estado       =data.get('cl_estado')
         )
         db.session.add(nueva_clientes)
         db.session.commit()
@@ -490,6 +491,56 @@ def agregar_venta():
         # Asegúrate de hacer rollback en caso de error para evitar inconsistencias en la base de datos
         db.session.rollback()
         return jsonify({'message': str(e), 'est': 'error'})
+
+@app.route('/api/v1/obtener_venta', methods=['GET'])
+def obtener_venta():
+    conn = psycopg2.connect(app.config['SQLALCHEMY_DATABASE_URI'])  # Establece la conexión a la base de datos
+    cursor = conn.cursor()
+    consulta = """
+        select v.vent_id,v.vent_usuario,v.vent_cliente,v.vent_direccion,v.vent_fecha,v.vent_total,v.vent_igv,v.vent_subtotal,
+        us.us_nombre as nombre_usuario,us.us_username, cl.cl_nombre as cliente, cl.cl_id as id_cliente 
+        from in_venta v 
+        inner join in_usuario us on us.us_id = v.vent_usuario
+        inner join in_clientes cl on cl.cl_id = v.vent_cliente
+        """
+    cursor.execute(consulta)
+    resultados = cursor.fetchall()
+    cursor.close()
+    conn.close()  # Cierra la conexión a la base de datos
+
+    resultados_ventas = []
+    for resultado in resultados:
+        vent_id, vent_usuario, vent_cliente, vent_direccion, vent_fecha, vent_total, vent_igv, vent_subtotal,nombre_usuario,us_username,cliente,id_cliente = resultado
+        venta_detalles = in_ventadetalle.query.filter_by(vent_det_vent_id=vent_id).all()
+        resultados_venta_detalle = []
+        for venta_detalle in venta_detalles:
+            resultados_venta_detalle.append({
+                'vent_det_id':venta_detalle.vent_det_id,
+                'vent_det_vent_id':venta_detalle.vent_det_vent_id,
+                'vent_item':venta_detalle.vent_item,
+                'vent_cantidad':venta_detalle.vent_cantidad,
+                'vent_unidad':venta_detalle.vent_unidad,
+                'vent_producto':venta_detalle.vent_producto,
+                'vent_valor':venta_detalle.vent_valor,
+                'vent_subtotal':venta_detalle.vent_subtotal,
+            })
+        
+        resultados_ventas.append({
+            'vent_id': vent_id,
+            'vent_usuario': vent_usuario,
+            'vent_cliente': vent_cliente,
+            'vent_direccion': vent_direccion,
+            'vent_fecha': vent_fecha,
+            'vent_total': vent_total,
+            'vent_igv': vent_igv,
+            'nombre_usuario': nombre_usuario,
+            'us_username': us_username,
+            'cliente': cliente,
+            'id_cliente': id_cliente,
+            'detalles':resultados_venta_detalle
+        })
+
+    return jsonify(resultados_ventas)
 
 if __name__ == '__main__':
     app.run(debug=True)

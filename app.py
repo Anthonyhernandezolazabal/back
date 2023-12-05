@@ -280,7 +280,7 @@ def editar_producto(prod_id, accion):
             producto.prod_cat_id    = data.get('prod_cat_id', producto.prod_cat_id)
             producto.prod_estado    = data.get('prod_estado', producto.prod_estado)
             producto.para_lamina    = data.get('para_lamina', producto.para_lamina)
-            producto.para_rafia    = data.get('para_rafia', producto.para_rafia)
+            producto.para_rafia     = data.get('para_rafia', producto.para_rafia)
 
             db.session.commit()
             return jsonify({'mensaje': 'Producto editado exitosamente', 'est': 'success'})

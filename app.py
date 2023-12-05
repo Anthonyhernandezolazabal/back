@@ -544,7 +544,7 @@ def obtener_venta():
     return jsonify(resultados_ventas)
 
 # Total de ventas del día
-@app.route('/api/v1/ventas-dia', methods=['GET'])
+@app.route('/api/v1/ventas-dia', methods=['POST'])
 def reporte_ventas_dia():
     try:
         fecha_actual = request.json.get('fecha')

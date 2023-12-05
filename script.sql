@@ -27,6 +27,10 @@ CREATE TABLE in_producto (
     FOREIGN KEY (prod_cat_id) REFERENCES in_categoria(cat_id)
 );
 
+ALTER TABLE in_producto
+ADD COLUMN para_lamina INTEGER,
+ADD COLUMN para_rafia INTEGER;
+
 CREATE TABLE in_proveedor (
     prov_id SERIAL PRIMARY KEY,
     prov_nombre VARCHAR(255),

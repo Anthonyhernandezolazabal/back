@@ -48,6 +48,8 @@ class in_producto(db.Model):
     prod_cat_id          = db.Column(db.Integer, db.ForeignKey('in_categoria.cat_id'))
     prod_estado          = db.Column(db.Integer)
     prod_fecha_registro  = db.Column(db.TIMESTAMP, default=datetime.utcnow)
+    para_lamina         = db.Column(db.Integer)
+    para_rafia          = db.Column(db.Integer)
 
     
 class in_proveedor(db.Model):
@@ -225,6 +227,8 @@ def obtener_productos():
             'prod_cat_id'           : producto.prod_cat_id,
             'prod_estado'           : producto.prod_estado,
             'prod_fecha_registro'   : producto.prod_fecha_registro.strftime('%Y-%m-%d %H:%M:%S'),
+            'para_lamina'           : producto.para_lamina,
+            'para_rafia'            : producto.para_rafia
         })
     return resultados
 
@@ -239,7 +243,9 @@ def registrar_producto():
             prod_precio     =data['prod_precio'],
             prod_cantidad   =data['prod_cantidad'],
             prod_cat_id     =data['prod_cat_id'],
-            prod_estado     =data['prod_estado']
+            prod_estado     =data['prod_estado'],
+            para_lamina     =data['para_lamina'],
+            para_rafia      =data['para_rafia']
         )
         db.session.add(nueva_producto)
         db.session.commit()
@@ -273,6 +279,8 @@ def editar_producto(prod_id, accion):
             producto.prod_cantidad  = data.get('prod_cantidad', producto.prod_cantidad)
             producto.prod_cat_id    = data.get('prod_cat_id', producto.prod_cat_id)
             producto.prod_estado    = data.get('prod_estado', producto.prod_estado)
+            producto.para_lamina    = data.get('para_lamina', producto.para_lamina)
+            producto.para_rafia    = data.get('para_rafia', producto.para_rafia)
 
             db.session.commit()
             return jsonify({'mensaje': 'Producto editado exitosamente', 'est': 'success'})

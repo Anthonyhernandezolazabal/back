@@ -576,8 +576,45 @@ def productos_mas_vendidos():
 
     return jsonify(resultados_formateados)
 
+# Reporte abc
+@app.route('/api/v1/reporte_abc', methods=['GET'])
+def consultar_api():
+    try:
+        conn = psycopg2.connect(app.config['SQLALCHEMY_DATABASE_URI'])
+        cur = conn.cursor()
 
+        consulta = """
+            SELECT
+                (SELECT prod_precio FROM in_producto WHERE prod_nombre = vent_producto) as valor_articulo,
+                SUM(vent_cantidad) as unidades_consumidas,
+                vent_producto as producto,
+                SUM(vent_subtotal) as consumo_anual,
+                (((SUM(vent_subtotal))/(SELECT SUM(vent_subtotal) FROM in_ventadetalle))*100) as porcentaje_total_anual
+            FROM in_ventadetalle
+            GROUP BY vent_producto
+            ORDER BY SUM(vent_cantidad) DESC
+        """
+        cur.execute(consulta)
 
+        resultado = cur.fetchall()
+
+        cur.close()
+
+        respuesta = []
+        for row in resultado:
+            resultado_dict = {
+                'valor_articulo': row[0],
+                'unidades_consumidas': row[1],
+                'producto': row[2],
+                'consumo_anual': row[3],
+                'porcentaje_total_anual': row[4]
+            }
+            respuesta.append(resultado_dict)
+
+        return jsonify({'resultado': respuesta})
+
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True)

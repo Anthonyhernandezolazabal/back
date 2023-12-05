@@ -3,6 +3,7 @@ import psycopg2
 from flask_cors import CORS
 from conexion import db, init_db
 from datetime import datetime
+from sqlalchemy import func
 app = Flask(__name__)
 
 HOST = "127.0.0.1"
@@ -541,6 +542,40 @@ def obtener_venta():
         })
 
     return jsonify(resultados_ventas)
+
+# Total de ventas del día
+@app.route('/api/v1/ventas-dia', methods=['GET'])
+def reporte_ventas_dia():
+    try:
+        fecha_actual = request.json.get('fecha')
+        resultado = db.session.query(func.sum(in_venta.vent_total).label('vent_total')).filter(in_venta.vent_fecha == fecha_actual).first()
+        if resultado.vent_total:
+            total_ventas_dia = float(resultado.vent_total)
+            return jsonify({'ventas_dia': total_ventas_dia})
+        else:
+            return jsonify({'ventas_dia': 0.0})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+# Productos mas vendidos
+@app.route('/api/v1/productos_mas_vendidos', methods=['GET'])
+def productos_mas_vendidos():
+
+    conn = psycopg2.connect(app.config['SQLALCHEMY_DATABASE_URI'])  # Establece la conexión a la base de datos
+    cursor = conn.cursor()
+    consulta = """
+        select SUM(vent_cantidad) as vent_producto from in_ventadetalle
+        group by vent_producto order by SUM(vent_cantidad) DESC limit 5
+        """
+    cursor.execute(consulta)
+    resultados = cursor.fetchall()
+    cursor.close()
+    conn.close()  # Cierra la conexión a la base de datos
+
+    return jsonify(resultados)
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

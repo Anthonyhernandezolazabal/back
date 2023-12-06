@@ -720,6 +720,10 @@ def agregar_compra():
             )
 
             db.session.add(nuevo_detalle)
+            # Cambiar por el ID
+            in_producto.query.filter_by(prod_nombre=detalle['comp_det_producto']).update({
+                "prod_cantidad": in_producto.prod_cantidad + detalle['comp_det_cantidad']
+            })
 
         db.session.commit()
 

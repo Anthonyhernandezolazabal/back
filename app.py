@@ -546,7 +546,8 @@ def obtener_venta():
             'us_username': us_username,
             'cliente': cliente,
             'id_cliente': id_cliente,
-            'detalles':resultados_venta_detalle
+            'detalles':resultados_venta_detalle,
+            'vent_subtotal_venta':vent_subtotal,
         })
 
     return jsonify(resultados_ventas)

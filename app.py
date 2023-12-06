@@ -72,8 +72,6 @@ class parametroadmin(db.Model):
     para_prefijo        = db.Column(db.Integer, default=0)
     para_estado         = db.Column(db.Integer, default=0)
 
-    
-
 class in_venta(db.Model):
     vent_id         = db.Column(db.Integer, primary_key=True)
     vent_usuario    = db.Column(db.Integer, nullable=False)
@@ -103,6 +101,26 @@ class in_clientes(db.Model):
     cl_fnacimiento  = db.Column(db.Date, nullable=True)
     cl_direccion    = db.Column(db.String(255), nullable=True)
     cl_estado       = db.Column(db.Integer, default=0)
+
+class in_compras(db.Model):
+    comp_id         = db.Column(db.Integer, primary_key=True)
+    comp_usuario    = db.Column(db.Integer, db.ForeignKey('in_usuario.us_id'))
+    comp_proveedor  = db.Column(db.Integer, db.ForeignKey('in_proveedor.prov_id'))
+    comp_direccion  = db.Column(db.String(255), nullable=False)
+    comp_fecha      = db.Column(db.Date, nullable=False)
+    comp_total      = db.Column(db.Numeric(10, 2), nullable=False)
+    comp_igv        = db.Column(db.Numeric(10, 2), nullable=False)
+    comp_subtotal   = db.Column(db.Numeric(10, 2), nullable=False)
+
+class in_compradetalle(db.Model):
+    comp_det_id         = db.Column(db.Integer, primary_key=True)
+    comp_det_comp_id    = db.Column(db.Integer, db.ForeignKey('in_compras.comp_id'), nullable=False)
+    comp_det_item       = db.Column(db.Numeric(10, 2), nullable=False)
+    comp_det_cantidad   = db.Column(db.Numeric(10, 2), nullable=False)
+    comp_det_unidad     = db.Column(db.String(255), nullable=False)
+    comp_det_producto   = db.Column(db.String(255), nullable=False)
+    comp_det_valor      = db.Column(db.Numeric(10, 2), nullable=False)
+    comp_det_subtotal   = db.Column(db.Numeric(10, 2), nullable=False)
 
 
 @app.route('/api/v1/',methods=['GET'])
@@ -642,6 +660,51 @@ def consultar_api():
 
     except Exception as e:
         return jsonify({'error': str(e)})
+
+#================================== COMPRA ===================================
+@app.route('/api/v1/registar_compra', methods=['POST'])
+def agregar_compra():
+    try:
+        data = request.get_json()
+
+        nueva_compra = in_compras(
+            comp_usuario    =data['comp_usuario'],
+            comp_proveedor  =data['comp_proveedor'],
+            comp_direccion  =data['comp_direccion'],
+            comp_fecha      =data['comp_fecha'],
+            comp_total      =data['comp_total'],
+            comp_igv        =data['comp_igv'],
+            comp_subtotal   =data['comp_subtotal']
+        )
+
+        db.session.add(nueva_compra)
+        db.session.commit()
+
+        for detalle in data['compra_detalle']:
+            nuevo_detalle = in_compradetalle(
+                comp_det_comp_id=nueva_compra.comp_id,
+                comp_det_item=detalle['comp_det_item'],
+                comp_det_cantidad=detalle['comp_det_cantidad'],
+                comp_det_unidad=detalle['comp_det_unidad'],
+                comp_det_producto=detalle['comp_det_producto'],
+                comp_det_valor=detalle['comp_det_valor'],
+                comp_det_subtotal=detalle['comp_det_subtotal']
+            )
+
+            db.session.add(nuevo_detalle)
+
+        db.session.commit()
+
+        return jsonify({'message': 'Compra registrada exitosamente', 'est': 'success'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': str(e), 'est': 'error'})
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -106,3 +106,31 @@ CREATE TABLE in_clientes (
 );
 
 INSERT INTO bd_usuario(us_nombre,us_username,us_email,us_password,us_rol) VALUES('DevOps','Admin','admin@correo.com','123','Administrador')
+
+
+----------------------------------------------------------------
+CREATE TABLE in_compras (
+    comp_id SERIAL PRIMARY KEY,
+    comp_usuario INTEGER NOT NULL,
+    comp_proveedor INTEGER NOT NULL,
+    comp_direccion VARCHAR(255) NOT NULL,
+    comp_fecha DATE NOT NULL,
+    comp_total NUMERIC(10, 2) NOT NULL,
+    comp_igv NUMERIC(10, 2) NOT NULL,
+    comp_subtotal NUMERIC(10, 2) NOT NULL,
+    FOREIGN KEY (comp_usuario) REFERENCES in_usuario(us_id)
+    FOREIGN KEY (comp_proveedor) REFERENCES in_proveedor(prov_id)
+);
+
+
+CREATE TABLE in_compradetalle (
+    comp_det_id SERIAL PRIMARY KEY,
+    comp_det_comp_id INTEGER NOT NULL,
+    FOREIGN KEY (comp_det_comp_id) REFERENCES in_compras(comp_id),
+    comp_det_item NUMERIC(10, 2) NOT NULL,
+    comp_det_cantidad NUMERIC(10, 2) NOT NULL,
+    comp_det_unidad VARCHAR(255) NOT NULL,
+    comp_det_producto VARCHAR(255) NOT NULL,
+    comp_det_valor NUMERIC(10, 2) NOT NULL,
+    comp_det_subtotal NUMERIC(10, 2) NOT NULL
+);

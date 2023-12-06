@@ -619,8 +619,8 @@ def productos_mas_vendidos():
     return jsonify(resultados_formateados)
 
 # Reporte abc
-@app.route('/api/v1/reporte_abc', methods=['GET'])
-def consultar_api():
+@app.route('/api/v1/reporte_abc/<string:accion>', methods=['GET'])
+def consultar_api(accion):
     try:
         conn = psycopg2.connect(app.config['SQLALCHEMY_DATABASE_URI'])
         cur = conn.cursor()
@@ -637,18 +637,32 @@ def consultar_api():
         #     ORDER BY SUM(vent_cantidad) DESC
         # """
 
-        consulta = """
-            SELECT
-                (SELECT prod_precio FROM in_producto WHERE prod_nombre = vent_producto limit 1) as valor_articulo,
-                SUM(vent_cantidad) as unidades_consumidas,
-                vent_producto as producto,
-                SUM(vent_subtotal) as consumo_anual,
-                (((SUM(vent_subtotal))/(SELECT SUM(vent_subtotal) FROM in_ventadetalle))*100) as porcentaje_total_anual,
-                SUM((((SUM(vent_subtotal))/(SELECT SUM(vent_subtotal) FROM in_ventadetalle))*100)) OVER (ORDER BY SUM(vent_cantidad) DESC) as porcentaje_acumulado_total_anual
-            FROM in_ventadetalle
-            GROUP BY vent_producto
-            ORDER BY SUM(vent_cantidad) DESC
-        """
+        if accion == 'resumen':   
+            consulta = """
+                SELECT
+                    (SELECT prod_precio FROM in_producto WHERE prod_nombre = vent_producto limit 1) as valor_articulo,
+                    SUM(vent_cantidad) as unidades_consumidas,
+                    vent_producto as producto,
+                    SUM(vent_subtotal) as consumo_anual,
+                    (((SUM(vent_subtotal))/(SELECT SUM(vent_subtotal) FROM in_ventadetalle))*100) as porcentaje_total_anual,
+                    SUM((((SUM(vent_subtotal))/(SELECT SUM(vent_subtotal) FROM in_ventadetalle))*100)) OVER (ORDER BY SUM(vent_cantidad) DESC) as porcentaje_acumulado_total_anual
+                FROM in_ventadetalle
+                GROUP BY vent_producto
+                ORDER BY SUM(vent_cantidad) ASC limit 3
+            """
+        if accion == 'reporte':   
+            consulta = """
+                SELECT
+                    (SELECT prod_precio FROM in_producto WHERE prod_nombre = vent_producto limit 1) as valor_articulo,
+                    SUM(vent_cantidad) as unidades_consumidas,
+                    vent_producto as producto,
+                    SUM(vent_subtotal) as consumo_anual,
+                    (((SUM(vent_subtotal))/(SELECT SUM(vent_subtotal) FROM in_ventadetalle))*100) as porcentaje_total_anual,
+                    SUM((((SUM(vent_subtotal))/(SELECT SUM(vent_subtotal) FROM in_ventadetalle))*100)) OVER (ORDER BY SUM(vent_cantidad) DESC) as porcentaje_acumulado_total_anual
+                FROM in_ventadetalle
+                GROUP BY vent_producto
+                ORDER BY SUM(vent_cantidad) DESC
+            """
 
         #  OVER para calcular la suma acumulativa
 

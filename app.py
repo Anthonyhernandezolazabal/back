@@ -511,6 +511,7 @@ def obtener_venta():
         from in_venta v 
         inner join in_usuario us on us.us_id = v.vent_usuario
         inner join in_clientes cl on cl.cl_id = v.vent_cliente
+		order by v.vent_id DESC
         """
     cursor.execute(consulta)
     resultados = cursor.fetchall()

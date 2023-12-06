@@ -736,7 +736,7 @@ def obtener_compra():
     resultados_compras = []
     for resultado in resultados:
         comp_id,comp_usuario,comp_proveedor,comp_direccion,comp_fecha,comp_total,comp_igv,comp_subtotal,nombre_usuario,us_username,proveedor,id_proveedor = resultado
-        compras_detalles = in_ventadetalle.query.filter_by(comp_det_comp_id=comp_id).all()
+        compras_detalles = in_compradetalle.query.filter_by(comp_det_comp_id=comp_id).all()
         resultados_venta_detalle = []
         for compras_detalle in compras_detalles:
             resultados_venta_detalle.append({

@@ -716,6 +716,57 @@ def agregar_compra():
         return jsonify({'message': str(e), 'est': 'error'})
 
 
+@app.route('/api/v1/obtener_compra', methods=['GET'])
+def obtener_compra():
+    conn = psycopg2.connect(app.config['SQLALCHEMY_DATABASE_URI'])  # Establece la conexión a la base de datos
+    cursor = conn.cursor()
+    consulta = """
+        select c.comp_id,c.comp_usuario,c.comp_proveedor,c.comp_direccion,c.comp_fecha,c.comp_total,c.comp_igv,c.comp_subtotal,
+        us.us_nombre as nombre_usuario,us.us_username, prv.prov_nombre as proveedor, prv.prov_id as id_proveedor 
+        from in_compras c 
+        inner join in_usuario us on us.us_id = c.comp_usuario
+        inner join in_proveedor prv on prv.prov_id = c.comp_id
+		order by c.comp_id DESC
+        """
+    cursor.execute(consulta)
+    resultados = cursor.fetchall()
+    cursor.close()
+    conn.close()  # Cierra la conexión a la base de datos
+
+    resultados_compras = []
+    for resultado in resultados:
+        comp_id,comp_usuario,comp_proveedor,comp_direccion,comp_fecha,comp_total,comp_igv,comp_subtotal,nombre_usuario,us_username,proveedor,id_proveedor = resultado
+        compras_detalles = in_ventadetalle.query.filter_by(vent_det_vent_id=vent_id).all()
+        resultados_venta_detalle = []
+        for compras_detalle in compras_detalles:
+            resultados_venta_detalle.append({
+                'comp_det_id':compras_detalle.comp_det_id,
+                'comp_det_comp_id':compras_detalle.comp_det_comp_id,
+                'comp_det_item':compras_detalle.comp_det_item,
+                'comp_det_cantidad':compras_detalle.comp_det_cantidad,
+                'comp_det_unidad':compras_detalle.comp_det_unidad,
+                'comp_det_producto':compras_detalle.comp_det_producto,
+                'comp_det_valor':compras_detalle.comp_det_valor,
+                'comp_det_subtotal':compras_detalle.comp_det_subtotal,
+            })
+        
+        resultados_compras.append({
+            'comp_id': comp_id,
+            'comp_usuario': comp_usuario,
+            'comp_proveedor': comp_proveedor,
+            'comp_direccion': comp_direccion,
+            'comp_fecha': comp_fecha.strftime('%Y-%m-%d'),
+            'comp_total': comp_total,
+            'comp_igv': comp_igv,
+            'nombre_usuario': nombre_usuario,
+            'us_username': us_username,
+            'proveedor': proveedor,
+            'id_proveedor': id_proveedor,
+            'detalles':resultados_venta_detalle,
+            'compra_subtotal_compra':comp_subtotal,
+        })
+
+    return jsonify(resultados_compras)
 
 
 

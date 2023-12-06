@@ -118,7 +118,7 @@ CREATE TABLE in_compras (
     comp_total NUMERIC(10, 2) NOT NULL,
     comp_igv NUMERIC(10, 2) NOT NULL,
     comp_subtotal NUMERIC(10, 2) NOT NULL,
-    FOREIGN KEY (comp_usuario) REFERENCES in_usuario(us_id)
+    FOREIGN KEY (comp_usuario) REFERENCES in_usuario(us_id),
     FOREIGN KEY (comp_proveedor) REFERENCES in_proveedor(prov_id)
 );
 

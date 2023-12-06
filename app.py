@@ -585,6 +585,20 @@ def reporte_ventas_dia():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+# Total de ventas del día
+@app.route('/api/v1/compras-dia', methods=['POST'])
+def compras_dia():
+    try:
+        fecha_actual = request.json.get('fecha')
+        resultado = db.session.query(func.sum(in_compras.comp_total).label('comp_total')).filter(in_compras.comp_fecha == fecha_actual).first()
+        if resultado.comp_total:
+            compras_dia = float(resultado.comp_total)
+            return jsonify({'compras_dia': compras_dia})
+        else:
+            return jsonify({'compras_dia': 0.0})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+    
 # Productos mas vendidos
 @app.route('/api/v1/productos_mas_vendidos', methods=['GET'])
 def productos_mas_vendidos():
@@ -625,7 +639,7 @@ def consultar_api():
 
         consulta = """
             SELECT
-                (SELECT prod_precio FROM in_producto WHERE prod_nombre = vent_producto) as valor_articulo,
+                (SELECT prod_precio FROM in_producto WHERE prod_nombre = vent_producto limit 1) as valor_articulo,
                 SUM(vent_cantidad) as unidades_consumidas,
                 vent_producto as producto,
                 SUM(vent_subtotal) as consumo_anual,
